@@ -1,5 +1,6 @@
 package org.example;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Board {
@@ -31,6 +32,51 @@ public class Board {
             player.exchangeCards(indexes, deck.dealCards(indexes.length));
         }
     }
+
+    public void evaluate(){
+        for (Player player : players) {
+            System.out.println(player.getHand().evaluateHand());
+        }
+    }
+    public List<Player> comparePlayersHands() {
+        List<Player> playersHands = new ArrayList<>();
+        int bestHand = -1;
+
+        // Step 1: Find the players with the best hand values
+        for (Player player : players) {
+            int value = player.getHandValues()[0];
+            if (value > bestHand) {
+                playersHands.clear();
+                playersHands.add(player);
+                bestHand = value;
+            } else if (value == bestHand) {
+                playersHands.add(player);
+            }
+        }
+
+        // Step 2: If there's a tie, resolve it using rank values
+        if (playersHands.size() > 1) {
+            List<Player> winners = new ArrayList<>();
+            int bestRank = -1;
+
+            for (Player player : playersHands) {
+                int rankValue = player.getHandValues()[1];
+                if (rankValue > bestRank) {
+                    winners.clear();
+                    winners.add(player);
+                    bestRank = rankValue;
+                } else if (rankValue == bestRank) {
+                    winners.add(player);
+                }
+            }
+
+            return winners;
+        }
+
+        // If no ties, return the single winner
+        return playersHands;
+    }
+
 
 
     @Override

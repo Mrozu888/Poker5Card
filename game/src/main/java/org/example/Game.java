@@ -29,6 +29,11 @@ public class Game {
         System.out.println(board);
         board.test();
         System.out.println(board);
+
+        board.evaluate();
+
+        System.out.println(board.comparePlayersHands());
+
     }
 
 }

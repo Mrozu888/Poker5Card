@@ -8,7 +8,7 @@ enum State{
 }
 
 public class Player {
-    private List<Card> cards;
+    private Hand hand;
     private long money;
     private long bet;
     private String name;
@@ -23,29 +23,16 @@ public class Player {
     }
 
     public void drawCards(List<Card> cards) {
-        this.cards = cards;
+        this.hand = new Hand(cards);
     }
 
     public void exchangeCards(int[] indexes, List<Card> newCards) {
-        int n = indexes.length;
-        for (int i = 0; i < n; i++) {
-            this.cards.set(indexes[i], newCards.get(i));
-        }
-
-        if (newCards == null || newCards.isEmpty()) {
-            System.out.println("No cards to exchange.");
-            return;
-        }
-
-        // Check if the player has cards to exchange
-        if (this.cards == null || this.cards.isEmpty()) {
-            System.out.println("Player has no cards to exchange.");
-            return;
-        }
-
-        System.out.println("Cards exchanged successfully.");
+        hand.exchangeCards(indexes, newCards);
     }
 
+    public Hand getHand() {
+        return hand;
+    }
 
     public long raiseBet(long amount) {
         if (amount > this.money) {
@@ -58,6 +45,14 @@ public class Player {
         return this.bet;
     }
 
+    public long getMoney() {
+        return money;
+    }
+
+    public int[] getHandValues(){
+        return this.hand.getEvaluatedValues();
+    }
+
     @Override
     public String toString() {
         return "Player{" +
@@ -65,7 +60,7 @@ public class Player {
                 ", name='" + name + '\'' +
                 ", bet=" + bet +
                 ", state=" + state +
-                ", cards=" + cards +
+                ", cards=" + hand +
                 '}';
     }
 }
