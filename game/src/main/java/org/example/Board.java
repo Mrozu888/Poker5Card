@@ -34,7 +34,7 @@ public class Board {
         }
     }
 
-    public void playerMove(String action, long amount) {
+    public void playerMove(String action, long amount, int[] cardsIndexes) {
         switch (action.toLowerCase()) {
             case "bet":
                 placeBet(amount);
@@ -54,7 +54,7 @@ public class Board {
         nextPlayer();
     }
 
-    private void placeBet(long amount) {
+    public void placeBet(long amount) {
         if (amount >= currentBet) {
             currentPlayer.placeBet(amount);
             pot += amount;
@@ -65,7 +65,7 @@ public class Board {
         }
     }
 
-    private void raise(long amount) {
+    public void raise(long amount) {
         if (amount > currentBet) {
             currentPlayer.placeBet(amount);
             pot += amount;
@@ -76,7 +76,7 @@ public class Board {
         }
     }
 
-    private void check() {
+    public void check() {
         if (currentBet == currentPlayer.getBet()) {
             System.out.println(currentPlayer.getName() + " checks.");
         } else {
@@ -84,12 +84,12 @@ public class Board {
         }
     }
 
-    private void fold() {
+    public void fold() {
         currentPlayer.fold();
         System.out.println(currentPlayer.getName() + " folds.");
     }
 
-    private void nextPlayer() {
+    public void nextPlayer() {
         do {
             currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
             currentPlayer = players.get(currentPlayerIndex);
@@ -177,6 +177,9 @@ public class Board {
         return true;
     }
 
+    public int getCardAmount() {
+        return cardAmount;
+    }
 
     @Override
     public String toString() {
