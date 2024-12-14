@@ -14,12 +14,14 @@ public class Player {
     private String name;
     private State state;
     private long id;
+    private boolean folded;
 
     public Player(long id, String name, long money) {
         this.id = id;
         this.name = name;
         this.money = money;
         this.state = State.WAITING;
+        this.folded = false;
     }
 
     public void drawCards(List<Card> cards) {
@@ -27,26 +29,44 @@ public class Player {
     }
 
     public void exchangeCards(int[] indexes, List<Card> newCards) {
-        hand.exchangeCards(indexes, newCards);
+        this.hand.exchangeCards(indexes, newCards);
     }
 
     public Hand getHand() {
         return hand;
     }
 
-    public long raiseBet(long amount) {
-        if (amount > this.money) {
-            System.out.println("You don't have enough money to raise the bet");
+    public void placeBet(long amount) {
+        if (amount > money) {
+            System.out.println("You don't have enough money!");
         }
         else{
-            this.money -= amount;
-            this.bet += amount;
+            money -= amount;
+            this.bet = amount;
         }
-        return this.bet;
+    }
+
+    public void addWinnings(long amount){
+        this.money += amount;
+    }
+
+    public long getBet() {
+        return bet;
+    }
+
+    public void fold() {
+        this.folded = true;
+    }
+
+    public boolean hasFolded() {
+        return this.folded;
     }
 
     public long getMoney() {
         return money;
+    }
+    public String getName() {
+        return name;
     }
 
     public int[] getHandValues(){
