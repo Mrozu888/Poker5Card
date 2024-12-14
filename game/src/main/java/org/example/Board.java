@@ -8,10 +8,12 @@ public class Board {
     private int cardAmount = 5;
     private final List<Player> players;
     private Deck deck;
+    private Player firstPlayer;
     private Player currentPlayer;
     private int currentPlayerIndex;
     private long pot;
     private long currentBet;
+    private int level;
 
     public Board(List<Player> players) {
         this.players = players;
@@ -21,9 +23,10 @@ public class Board {
         this.deck = Deck.sortedDeck(); // create new sorted deck
         this.deck.shuffle(); // shuffle deck
 
-        this.dealCardsToPlayers();
+//        this.dealCardsToPlayers();
         this.currentPlayerIndex = randInt(players.size());
-        this.currentPlayer = players.get(currentPlayerIndex);
+        this.firstPlayer = players.get(currentPlayerIndex);
+        this.currentPlayer = firstPlayer;
         this.pot = 0;
         this.currentBet = 0;
     }
@@ -34,53 +37,46 @@ public class Board {
         }
     }
 
-    public void playerMove(String action, long amount, int[] cardsIndexes) {
-        switch (action.toLowerCase()) {
-            case "bet":
-                placeBet(amount);
-                break;
-            case "raise":
-                raise(amount);
-                break;
-            case "check":
-                check();
-                break;
-            case "fold":
-                fold();
-                break;
-            default:
-                System.out.println("Invalid action! Choose bet, raise, check, or fold.");
-        }
-        nextPlayer();
-    }
-
-    public void placeBet(long amount) {
-        if (amount >= currentBet) {
-            currentPlayer.placeBet(amount);
+    public boolean placeBet(long amount) {
+        if (amount >= currentBet && currentPlayer.placeBet(amount)) {
             pot += amount;
             currentBet = amount;
             System.out.println(currentPlayer.getName() + " bets " + amount);
+            return true;
         } else {
             System.out.println("Bet must be at least " + currentBet + " or higher!");
+            return false;
         }
     }
 
-    public void raise(long amount) {
+    public boolean raise(long amount) {
         if (amount > currentBet) {
             currentPlayer.placeBet(amount);
-            pot += amount;
+            pot += amount-currentPlayer.getBet();
             currentBet = amount;
             System.out.println(currentPlayer.getName() + " raises to " + amount);
+
+            for (Player player : players) {
+                if (!player.hasFolded()) {
+                    player.setChecking(false);
+                }
+            }
+
+            return true;
         } else {
             System.out.println("Raise must be greater than the current bet of " + currentBet);
+            return false;
         }
     }
 
-    public void check() {
+    public boolean check() {
         if (currentBet == currentPlayer.getBet()) {
             System.out.println(currentPlayer.getName() + " checks.");
+            currentPlayer.setChecking(true);
+            return true;
         } else {
             System.out.println("You cannot check; there is a bet of " + currentBet);
+            return false;
         }
     }
 
@@ -90,15 +86,14 @@ public class Board {
     }
 
     public void nextPlayer() {
-        do {
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
-            currentPlayer = players.get(currentPlayerIndex);
-        } while (currentPlayer.hasFolded());
+        if (getActivePlayerCount()>1){
+            do {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                currentPlayer = players.get(currentPlayerIndex);
+            } while (currentPlayer.hasFolded());
+        }
     }
 
-    public long getPot() {
-        return pot;
-    }
 
     public void endRound() {
         evaluate();
@@ -124,13 +119,15 @@ public class Board {
 
         // Find the players with the best hand values
         for (Player player : players) {
-            int value = player.getHandValues()[0];
-            if (value > bestHand) {
-                playersHands.clear();
-                playersHands.add(player);
-                bestHand = value;
-            } else if (value == bestHand) {
-                playersHands.add(player);
+            if (!player.hasFolded()){
+                int value = player.getHandValues()[0];
+                if (value > bestHand) {
+                    playersHands.clear();
+                    playersHands.add(player);
+                    bestHand = value;
+                } else if (value == bestHand) {
+                    playersHands.add(player);
+                }
             }
         }
 
@@ -157,10 +154,6 @@ public class Board {
         return playersHands;
     }
 
-    public int getActivePlayerCount() {
-        return (int) players.stream().filter(player -> !player.hasFolded()).count();
-    }
-
     public boolean isBettingEqual() {
         long currentBet = -1;
 
@@ -177,8 +170,37 @@ public class Board {
         return true;
     }
 
+    public long getPot() {
+        return pot;
+    }
+
+    public int getActivePlayerCount() {
+        return (int) players.stream().filter(player -> !player.hasFolded()).count();
+    }
+    public boolean checkIfAllPlayersAreChecking(){
+        for (Player player : players) {
+            if (!player.isChecking() && !player.hasFolded()){
+                return false;
+            }
+        }
+        System.out.println("All players are checking!");
+        return true;
+    }
+
+    public long getCurrentBet() {
+        return currentBet;
+    }
+
     public int getCardAmount() {
         return cardAmount;
+    }
+
+    public Player getCurrentPlayer() {
+        return currentPlayer;
+    }
+
+    public Player getFirstPlayer() {
+        return firstPlayer;
     }
 
     @Override
@@ -195,7 +217,5 @@ public class Board {
         return random.nextInt(max);
     }
 
-    public long getCurrentBet() {
-        return currentBet;
-    }
+
 }

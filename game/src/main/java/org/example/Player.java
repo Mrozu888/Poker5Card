@@ -15,6 +15,7 @@ public class Player {
     private State state;
     private long id;
     private boolean folded;
+    private boolean checking;
 
     public Player(long id, String name, long money) {
         this.id = id;
@@ -22,6 +23,7 @@ public class Player {
         this.money = money;
         this.state = State.WAITING;
         this.folded = false;
+        this.bet = 0;
     }
 
     public void drawCards(List<Card> cards) {
@@ -36,13 +38,16 @@ public class Player {
         return hand;
     }
 
-    public void placeBet(long amount) {
-        if (amount > money) {
+    public boolean placeBet(long amount) {
+        long addedBet = amount - this.bet;
+        if (addedBet > money) {
             System.out.println("You don't have enough money!");
+            return false;
         }
         else{
-            money -= amount;
+            this.money -= addedBet;
             this.bet = amount;
+            return true;
         }
     }
 
@@ -71,6 +76,13 @@ public class Player {
 
     public int[] getHandValues(){
         return this.hand.getEvaluatedValues();
+    }
+
+    public void setChecking(boolean checking) {
+        this.checking = checking;
+    }
+    public boolean isChecking() {
+        return this.checking;
     }
 
     @Override
