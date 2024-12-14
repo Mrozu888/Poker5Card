@@ -16,6 +16,7 @@ public class Player {
     private long id;
     private boolean folded;
     private boolean checking;
+    private boolean exchanged;
 
     public Player(long id, String name, long money) {
         this.id = id;
@@ -24,6 +25,8 @@ public class Player {
         this.state = State.WAITING;
         this.folded = false;
         this.bet = 0;
+        this.exchanged = false;
+        this.checking = false;
     }
 
     public void drawCards(List<Card> cards) {
@@ -32,6 +35,7 @@ public class Player {
 
     public void exchangeCards(int[] indexes, List<Card> newCards) {
         this.hand.exchangeCards(indexes, newCards);
+        this.setExchanged(true);
     }
 
     public Hand getHand() {
@@ -83,6 +87,13 @@ public class Player {
     }
     public boolean isChecking() {
         return this.checking;
+    }
+
+    public boolean isExchanged() {
+        return exchanged;
+    }
+    public void setExchanged(boolean exchanged) {
+        this.exchanged = exchanged;
     }
 
     @Override

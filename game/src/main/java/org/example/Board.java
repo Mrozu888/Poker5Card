@@ -13,7 +13,6 @@ public class Board {
     private int currentPlayerIndex;
     private long pot;
     private long currentBet;
-    private int level;
 
     public Board(List<Player> players) {
         this.players = players;
@@ -23,7 +22,6 @@ public class Board {
         this.deck = Deck.sortedDeck(); // create new sorted deck
         this.deck.shuffle(); // shuffle deck
 
-//        this.dealCardsToPlayers();
         this.currentPlayerIndex = randInt(players.size());
         this.firstPlayer = players.get(currentPlayerIndex);
         this.currentPlayer = firstPlayer;
@@ -35,6 +33,10 @@ public class Board {
         for (Player player : players) { // draw cards to players
             player.drawCards(this.deck.dealCards(cardAmount));
         }
+    }
+
+    public List<Card> dealCards(int numberOfCards) {
+        return deck.dealCards(numberOfCards);
     }
 
     public boolean placeBet(long amount) {
@@ -56,11 +58,7 @@ public class Board {
             currentBet = amount;
             System.out.println(currentPlayer.getName() + " raises to " + amount);
 
-            for (Player player : players) {
-                if (!player.hasFolded()) {
-                    player.setChecking(false);
-                }
-            }
+            restartPlayersState();
 
             return true;
         } else {
@@ -94,6 +92,15 @@ public class Board {
         }
     }
 
+    public boolean isExchangeFinished() {
+        for (Player player : players) {
+            if (!player.isExchanged() && !player.hasFolded()){
+                return false;
+            }
+        }
+        System.out.println("Exchange finished");
+        return true;
+    }
 
     public void endRound() {
         evaluate();
@@ -170,13 +177,14 @@ public class Board {
         return true;
     }
 
-    public long getPot() {
-        return pot;
+    public void restartPlayersState(){
+        for (Player player : players) {
+            if (!player.hasFolded()){
+                player.setChecking(false);
+            }
+        }
     }
 
-    public int getActivePlayerCount() {
-        return (int) players.stream().filter(player -> !player.hasFolded()).count();
-    }
     public boolean checkIfAllPlayersAreChecking(){
         for (Player player : players) {
             if (!player.isChecking() && !player.hasFolded()){
@@ -185,6 +193,14 @@ public class Board {
         }
         System.out.println("All players are checking!");
         return true;
+    }
+
+    public long getPot() {
+        return pot;
+    }
+
+    public int getActivePlayerCount() {
+        return (int) players.stream().filter(player -> !player.hasFolded()).count();
     }
 
     public long getCurrentBet() {
