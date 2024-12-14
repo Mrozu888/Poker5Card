@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 enum State{
-    FOLD, CALL, RAISE, ALLIN, WAITING
+    FOLD, CHECK, BET, EXCHANGE, WAITING
 }
 
 public class Player {
@@ -14,19 +14,13 @@ public class Player {
     private String name;
     private State state;
     private long id;
-    private boolean folded;
-    private boolean checking;
-    private boolean exchanged;
 
     public Player(long id, String name, long money) {
         this.id = id;
         this.name = name;
         this.money = money;
         this.state = State.WAITING;
-        this.folded = false;
         this.bet = 0;
-        this.exchanged = false;
-        this.checking = false;
     }
 
     public void drawCards(List<Card> cards) {
@@ -35,7 +29,7 @@ public class Player {
 
     public void exchangeCards(int[] indexes, List<Card> newCards) {
         this.hand.exchangeCards(indexes, newCards);
-        this.setExchanged(true);
+        this.state = State.EXCHANGE;
     }
 
     public Hand getHand() {
@@ -63,13 +57,6 @@ public class Player {
         return bet;
     }
 
-    public void fold() {
-        this.folded = true;
-    }
-
-    public boolean hasFolded() {
-        return this.folded;
-    }
 
     public long getMoney() {
         return money;
@@ -82,18 +69,11 @@ public class Player {
         return this.hand.getEvaluatedValues();
     }
 
-    public void setChecking(boolean checking) {
-        this.checking = checking;
+    public void setState(State state) {
+        this.state = state;
     }
-    public boolean isChecking() {
-        return this.checking;
-    }
-
-    public boolean isExchanged() {
-        return exchanged;
-    }
-    public void setExchanged(boolean exchanged) {
-        this.exchanged = exchanged;
+    public State getState() {
+        return this.state;
     }
 
     @Override

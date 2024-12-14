@@ -151,6 +151,7 @@ public class Game {
         List<Card> newCards = board.dealCards(indexes.length);
         player.exchangeCards(indexes, newCards);
 
+        System.out.println("New hand: " + player.getHand());
         board.nextPlayer();
 
     }

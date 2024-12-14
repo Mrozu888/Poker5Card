@@ -70,7 +70,7 @@ public class Board {
     public boolean check() {
         if (currentBet == currentPlayer.getBet()) {
             System.out.println(currentPlayer.getName() + " checks.");
-            currentPlayer.setChecking(true);
+            currentPlayer.setState(State.CHECK);
             return true;
         } else {
             System.out.println("You cannot check; there is a bet of " + currentBet);
@@ -79,7 +79,7 @@ public class Board {
     }
 
     public void fold() {
-        currentPlayer.fold();
+        currentPlayer.setState(State.FOLD);
         System.out.println(currentPlayer.getName() + " folds.");
     }
 
@@ -88,13 +88,13 @@ public class Board {
             do {
                 currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
                 currentPlayer = players.get(currentPlayerIndex);
-            } while (currentPlayer.hasFolded());
+            } while (currentPlayer.getState() == State.FOLD);
         }
     }
 
     public boolean isExchangeFinished() {
         for (Player player : players) {
-            if (!player.isExchanged() && !player.hasFolded()){
+            if (player.getState() != State.EXCHANGE && player.getState() != State.FOLD){
                 return false;
             }
         }
@@ -126,7 +126,7 @@ public class Board {
 
         // Find the players with the best hand values
         for (Player player : players) {
-            if (!player.hasFolded()){
+            if (!player.getState().equals(State.FOLD)){
                 int value = player.getHandValues()[0];
                 if (value > bestHand) {
                     playersHands.clear();
@@ -165,7 +165,7 @@ public class Board {
         long currentBet = -1;
 
         for (Player player : players) {
-            if (!player.hasFolded()) {
+            if (!player.getState().equals(State.FOLD)) {
                 if (currentBet == -1) {
                     currentBet = player.getBet();
                 } else if (player.getBet() != currentBet) {
@@ -179,15 +179,15 @@ public class Board {
 
     public void restartPlayersState(){
         for (Player player : players) {
-            if (!player.hasFolded()){
-                player.setChecking(false);
+            if (!player.getState().equals(State.FOLD)){
+                player.setState(State.BET);
             }
         }
     }
 
     public boolean checkIfAllPlayersAreChecking(){
         for (Player player : players) {
-            if (!player.isChecking() && !player.hasFolded()){
+            if (player.getState() != State.CHECK && player.getState() != State.FOLD){
                 return false;
             }
         }
@@ -200,7 +200,7 @@ public class Board {
     }
 
     public int getActivePlayerCount() {
-        return (int) players.stream().filter(player -> !player.hasFolded()).count();
+        return (int) players.stream().filter(player -> !player.getState().equals(State.FOLD)).count();
     }
 
     public long getCurrentBet() {
