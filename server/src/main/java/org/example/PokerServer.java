@@ -1,130 +1,131 @@
 package org.example;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
 import java.util.*;
-import java.util.concurrent.*;
 
-// PokerServer class to manage multiple games
 public class PokerServer {
-    private static final int PORT = 12345; // Server port
-    private static final Map<Integer, Game> games = new HashMap<>(); // Map of game IDs to game instances
-    private static final Map<Socket, Player> playerSockets = new ConcurrentHashMap<>(); // Socket to Player mapping
-    private static final ExecutorService threadPool = Executors.newCachedThreadPool(); // Thread pool
+    private static final int SERVER_PORT = 12345;
+    private static final Map<Integer, Game> games = new HashMap<>();
+    private static final Map<SocketChannel, Player> players = new HashMap<>();
+    private static long playerIdCounter = 0;
 
     public static void main(String[] args) {
-        System.out.println("Poker Server is starting...");
-        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Server is listening on port " + PORT);
+        try (Selector selector = Selector.open();
+             ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
+
+            serverChannel.configureBlocking(false);
+            serverChannel.socket().bind(new InetSocketAddress(SERVER_PORT));
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            System.out.println("Poker Server is listening on port " + SERVER_PORT);
 
             while (true) {
-                // Accept new client connections
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("New client connected: " + clientSocket.getInetAddress().getHostAddress());
+                selector.select();
 
-                // Handle the client in a separate thread
-                threadPool.execute(new ClientHandler(clientSocket));
+                Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
+
+                while (keys.hasNext()){
+                    SelectionKey key = keys.next();
+                    keys.remove();
+                    if (key.isAcceptable()) {
+                        handleAccept(serverChannel, selector);
+                    } else if (key.isReadable()) {
+                        handleRead((SocketChannel) key.channel());
+                    }
+                }
+
+                selector.selectedKeys().clear();
             }
         } catch (IOException e) {
-            System.err.println("Server exception: " + e.getMessage());
+            System.err.println("Server error: " + e.getMessage());
         }
     }
 
-    // Inner class to handle client communication
-    static class ClientHandler implements Runnable {
-        private final Socket socket;
+    private static void handleAccept(ServerSocketChannel serverChannel, Selector selector) throws IOException {
+        SocketChannel clientChannel = serverChannel.accept();
+        clientChannel.configureBlocking(false);
+        clientChannel.register(selector, SelectionKey.OP_READ);
 
-        public ClientHandler(Socket socket) {
-            this.socket = socket;
-        }
+        // New player
+        Player player = new Player(playerIdCounter++, "Anonymous", 1000);
+        players.put(clientChannel, player);
 
-        @Override
-        public void run() {
-            try (
-                    InputStream input = socket.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                    OutputStream output = socket.getOutputStream();
-                    PrintWriter writer = new PrintWriter(output, true);
-            ) {
-                writer.println("Welcome to the Poker Server! Enter your name:");
-                String name = reader.readLine();
+        System.out.println("[Server]: New player connected.");
+        sendMessage(clientChannel, "Welcome to the Poker Server! Type 'list' for available games.");
+    }
 
-                Player player = new Player(playerSockets.size() + 1, name, 1000); // Create a new player
-                playerSockets.put(socket, player); // Associate socket with player
-                writer.println("You have joined the server. Use 'join <gameId>' or 'create' to start a game.");
-
-                String command;
-                while ((command = reader.readLine()) != null) {
-                    System.out.println("Received from " + name + ": " + command);
-
-                    if (command.equalsIgnoreCase("exit")) {
-                        writer.println("Goodbye!");
-                        playerSockets.remove(socket);
-                        break;
-                    }
-
-                    // Process client commands
-                    String response = processCommand(player, command);
-                    writer.println(response);
-                }
-            } catch (IOException e) {
-                System.err.println("Client disconnected: " + e.getMessage());
-                playerSockets.remove(socket);
+    private static void handleRead(SocketChannel clientChannel) {
+        ByteBuffer buffer = ByteBuffer.allocate(256);
+        try {
+            int bytesRead = clientChannel.read(buffer);
+            if (bytesRead == -1) {
+                disconnectPlayer(clientChannel);
+                return;
             }
-        }
 
-        private String processCommand(Player player, String command) {
+            buffer.flip();
+            byte[] data = new byte[buffer.limit()];
+            buffer.get(data);
+
+            String command = new String(data).trim();
+            if (!command.isEmpty()) {
+                Player player = players.get(clientChannel);
+                String response = processCommand(player, command);
+                sendMessage(clientChannel, response);
+            }
+        } catch (IOException e) {
+            disconnectPlayer(clientChannel);
+        }
+    }
+
+    private static String processCommand(Player player, String command) {
             if (command.equalsIgnoreCase("create")) {
-                // Create a new game
                 Game game = new Game();
-                synchronized (games) {
-                    games.put(game.getGameId(), game);
-                }
+                games.put(game.getGameId(), game);
                 game.addPlayer(player);
                 return "Game created with ID: " + game.getGameId();
             } else if (command.startsWith("join")) {
-                // Join an existing game
-                try {
-                    int gameId = Integer.parseInt(command.split(" ")[1]);
-                    Game game;
-                    synchronized (games) {
-                        game = games.get(gameId);
-                    }
-                    if (game == null) return "Game ID " + gameId + " does not exist.";
-                    game.addPlayer(player);
-                    return "You have joined game " + gameId;
-                } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-                    return "Invalid command. Use: join <gameId>";
-                }
+                int gameId = Integer.parseInt(command.split(" ")[1]);
+                Game game = games.get(gameId);
+                if (game == null) return "Game ID " + gameId + " does not exist.";
+                game.addPlayer(player);
+                return "You have joined game " + gameId;
             } else if (command.equalsIgnoreCase("list")) {
-                // List all games
                 StringBuilder sb = new StringBuilder("Available games:\n");
-                synchronized (games) {
-                    for (Game game : games.values()) {
-                        sb.append("Game ID: ").append(game.getGameId())
-                                .append(", Players: ").append(game.getPlayers().size()).append("\n");
-                    }
+                for (Game game : games.values()) {
+                    sb.append("Game ID: ").append(game.getGameId())
+                            .append(", Players: ").append(game.getPlayers().size()).append("\n");
                 }
                 return sb.toString();
             } else if (command.equalsIgnoreCase("status")) {
-                // Show game status
-                Game game = findPlayerGame(player);
-                if (game == null) return "You are not in a game.";
-                return "Game status: " + game;
+                return "Your status: " + player;
+            } else if (command.equalsIgnoreCase("exit")) {
+                return "Goodbye!";
             } else {
-                return "Unknown command. Available commands: create, join <gameId>, list, status, exit";
+                return "Unknown command.";
             }
-        }
 
-        private Game findPlayerGame(Player player) {
-            synchronized (games) {
-                for (Game game : games.values()) {
-                    if (game.getPlayers().contains(player)) {
-                        return game;
-                    }
-                }
-            }
-            return null;
+    }
+
+    private static void sendMessage(SocketChannel clientChannel, String message) {
+        try {
+            ByteBuffer buffer = ByteBuffer.wrap((message + "\n").getBytes());
+            clientChannel.write(buffer);
+        } catch (IOException e) {
+            disconnectPlayer(clientChannel);
+        }
+    }
+
+    private static void disconnectPlayer(SocketChannel clientChannel) {
+        try {
+            Player player = players.remove(clientChannel);
+            System.out.println("[Server]: Player disconnected.");
+            clientChannel.close();
+        } catch (IOException e) {
+            System.err.println("Error while disconnecting player: " + e.getMessage());
         }
     }
 }

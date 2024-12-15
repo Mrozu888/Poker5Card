@@ -76,6 +76,10 @@ public class Player {
         return this.state;
     }
 
+    public long getId() {
+        return id;
+    }
+
     @Override
     public String toString() {
         return "Player{" +

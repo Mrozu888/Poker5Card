@@ -127,51 +127,52 @@ public class Hand {
         Map<Integer, Long> frequencies = rankFrequency();
         String handType;
         int relevantRank = -1;
-        this.handValue = this.getHandRank();
-        switch (this.handValue) {
-            case 8: // Straight Flush
-            case 4: // Straight
-                relevantRank = getSortedRanks().get(getSortedRanks().size() - 1); // Highest rank in the straight
-                handType = getHandRank() == 8 ? "Straight Flush" : "Straight";
-                break;
-            case 7: // Four of a Kind
-                relevantRank = getRankWithFrequency(4, frequencies); // Rank with frequency 4
-                handType = "Four of a Kind";
-                break;
-            case 6: // Full House
-                relevantRank = getRankWithFrequency(3, frequencies); // Rank with frequency 3
-                handType = "Full House";
-                break;
-            case 5: // Flush
-                relevantRank = getSortedRanks().get(getSortedRanks().size() - 1); // Highest card in flush
-                handType = "Flush";
-                break;
-            case 3: // Three of a Kind
-                relevantRank = getRankWithFrequency(3, frequencies); // Rank with frequency 3
-                handType = "Three of a Kind";
-                break;
-            case 2: // Two Pair
-                List<Integer> pairs = getRanksWithFrequency(2, frequencies);
-                pairs.sort(Collections.reverseOrder()); // Sort pairs by rank
-                relevantRank = pairs.get(0); // Highest pair
-                handType = "Two Pair";
-                break;
-            case 1: // One Pair
-                relevantRank = getRankWithFrequency(2, frequencies); // Rank with frequency 2
-                handType = "One Pair";
-                break;
-            default: // High Card
-                relevantRank = getSortedRanks().get(getSortedRanks().size() - 1); // Highest card
-                handType = "High Card";
-                break;
+
+        boolean flush = isFlush();
+        boolean straight = isStraight();
+
+        if (flush && straight) {
+            // Check if it's a valid straight (including Ace-low scenario)
+            List<Integer> sortedRanks = getSortedRanks();
+            boolean isAceLowStraight = sortedRanks.equals(Arrays.asList(0, 1, 2, 3, 12));
+            relevantRank = isAceLowStraight ? 3 : sortedRanks.get(sortedRanks.size() - 1); // Highest rank in straight
+            handType = "Straight Flush";
+        } else if (flush) {
+            relevantRank = getSortedRanks().get(getSortedRanks().size() - 1); // Highest card in flush
+            handType = "Flush";
+        } else if (straight) {
+            relevantRank = getSortedRanks().get(getSortedRanks().size() - 1); // Highest rank in straight
+            handType = "Straight";
+        } else if (frequencies.containsValue(4L)) {
+            relevantRank = getRankWithFrequency(4, frequencies); // Rank with frequency 4
+            handType = "Four of a Kind";
+        } else if (frequencies.containsValue(3L) && frequencies.containsValue(2L)) {
+            relevantRank = getRankWithFrequency(3, frequencies); // Rank with frequency 3
+            handType = "Full House";
+        } else if (frequencies.containsValue(3L)) {
+            relevantRank = getRankWithFrequency(3, frequencies); // Rank with frequency 3
+            handType = "Three of a Kind";
+        } else if (Collections.frequency(frequencies.values(), 2L) == 2) {
+            List<Integer> pairs = getRanksWithFrequency(2, frequencies);
+            pairs.sort(Collections.reverseOrder()); // Sort pairs by rank
+            relevantRank = pairs.get(0); // Highest pair
+            handType = "Two Pair";
+        } else if (frequencies.containsValue(2L)) {
+            relevantRank = getRankWithFrequency(2, frequencies); // Rank with frequency 2
+            handType = "One Pair";
+        } else {
+            relevantRank = getSortedRanks().get(getSortedRanks().size() - 1); // Highest card
+            handType = "High Card";
         }
 
-        // Append the relevant rank to the hand type
+        // Set hand type, rank value, and return the result
         this.handType = handType;
         this.rankValue = relevantRank;
+        this.handValue = getHandRank();
 
         return handType + " (Relevant card: " + Rank.values()[relevantRank] + ")";
     }
+
 
     // Helper method to find the rank with a specific frequency
     private int getRankWithFrequency(int frequency, Map<Integer, Long> frequencies) {

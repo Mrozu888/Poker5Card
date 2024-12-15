@@ -1,7 +1,9 @@
 package org.example;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
 public class PokerClient {
@@ -9,30 +11,40 @@ public class PokerClient {
     private static final int SERVER_PORT = 12345;
 
     public static void main(String[] args) {
-        try (Socket socket = new Socket(SERVER_ADDRESS, SERVER_PORT);
-             InputStream input = socket.getInputStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-             OutputStream output = socket.getOutputStream();
-             PrintWriter writer = new PrintWriter(output, true);
-             Scanner scanner = new Scanner(System.in)) {
+        try (SocketChannel socketChannel = SocketChannel.open()) {
+            socketChannel.connect(new InetSocketAddress(SERVER_ADDRESS, SERVER_PORT));
+            System.out.println("Connected to Poker Server!");
 
-            System.out.println("Connected to the Poker Server!");
+            Scanner scanner = new Scanner(System.in);
+            ByteBuffer buffer = ByteBuffer.allocate(256);
 
-            // Read the welcome message
-            String serverMessage;
-            while ((serverMessage = reader.readLine()) != null) {
-                System.out.println(serverMessage);
-
-                // Wait for user input and send to server
+            while (true) {
                 System.out.print("> ");
-                String clientMessage = scanner.nextLine();
+                String userInput = scanner.nextLine();
 
-                writer.println(clientMessage); // Send message to server
+                if (userInput.trim().isEmpty()) {
+                    System.out.println("Please enter a valid command.");
+                    continue;
+                }
 
-                // Break the loop if the client wants to exit
-                if (clientMessage.equalsIgnoreCase("exit")) {
+                // Wysyłanie danych do serwera
+                buffer.clear();
+                buffer.put(userInput.getBytes());
+                buffer.flip();
+                socketChannel.write(buffer);
+
+                if (userInput.equalsIgnoreCase("exit")) {
                     System.out.println("Disconnecting from server...");
                     break;
+                }
+
+                // Odbieranie odpowiedzi od serwera
+                buffer.clear();
+                int bytesRead = socketChannel.read(buffer);
+                if (bytesRead > 0) {
+                    buffer.flip();
+                    String serverResponse = new String(buffer.array(), 0, buffer.limit()).trim();
+                    System.out.println("[Server]: " + serverResponse);
                 }
             }
         } catch (IOException e) {
@@ -40,4 +52,3 @@ public class PokerClient {
         }
     }
 }
-

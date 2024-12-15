@@ -11,15 +11,26 @@ public class Game {
     public Game() {
         this.gameId = id++;
         this.players = new ArrayList<>();
-        setup();
+        board = new Board(players);
+    }
+    public void addPlayer(Player player) {
+        if (players.size() < 5) {
+            players.add(player);
+        } else {
+            System.out.println("Game is full!");
+        }
     }
 
-    public void setup(){
-        board = new Board(players);
+    public void removePlayer(Player player) {
+        if (players.contains(player)) {
+            players.remove(player);
+        } else {
+            System.out.println("Player not found!");
+        }
     }
 
     public void start() {
-        setupPlayers();
+//        setupPlayers();
 
         board.start();
 
@@ -175,6 +186,10 @@ public class Game {
 
     public int getGameId() {
         return gameId;
+    }
+
+    public List<Player> getPlayers() {
+        return players;
     }
 
     @Override
