@@ -11,12 +11,23 @@ public class PokerClient {
     private static final int SERVER_PORT = 12345;
 
     public static void main(String[] args) {
+
+        System.out.println("Poker Client is running...");
+        System.out.println("Enter your name: ");
+        String name = new Scanner(System.in).nextLine();
+
         try (SocketChannel socketChannel = SocketChannel.open()) {
             socketChannel.connect(new InetSocketAddress(SERVER_ADDRESS, SERVER_PORT));
             System.out.println("Connected to Poker Server!");
 
             Scanner scanner = new Scanner(System.in);
             ByteBuffer buffer = ByteBuffer.allocate(256);
+
+            buffer.clear();
+            buffer.put(name.getBytes());
+            buffer.flip();
+            socketChannel.write(buffer);
+
 
             while (true) {
                 System.out.print("> ");

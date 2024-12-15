@@ -49,12 +49,32 @@ public class PokerServer {
         clientChannel.configureBlocking(false);
         clientChannel.register(selector, SelectionKey.OP_READ);
 
-        // New player
-        Player player = new Player(playerIdCounter++, "Anonymous", 1000);
-        players.put(clientChannel, player);
+
 
         System.out.println("[Server]: New player connected.");
-        sendMessage(clientChannel, "Welcome to the Poker Server! Type 'list' for available games.");
+
+        ByteBuffer buffer = ByteBuffer.allocate(256);
+        int bytesRead = clientChannel.read(buffer);
+        if (bytesRead == -1) {
+            disconnectPlayer(clientChannel);
+            return;
+        }
+        buffer.flip();
+        byte[] data = new byte[buffer.limit()];
+        buffer.get(data);
+        String name = new String(data).trim();
+
+        // New player
+        Player player;
+        if (name.isEmpty()) {
+            player = new Player(playerIdCounter++, "Anonymous", 1000);
+        }
+        else{
+            player = new Player(playerIdCounter++, name, 1000);
+        }
+        players.put(clientChannel, player);
+
+        sendMessage(clientChannel, "Welcome to the Poker Server "+name+"! Type 'list' for available games.");
     }
 
     private static void handleRead(SocketChannel clientChannel) {
