@@ -3,13 +3,12 @@ package org.example;
 import java.util.*;
 
 public class Game {
-    private static int id = 0;
     private final int gameId;
     private final List<Player> players;
     private Board board;
 
-    public Game() {
-        this.gameId = id++;
+    public Game(int gameId) {
+        this.gameId = gameId;
         this.players = new ArrayList<>();
         board = new Board(players);
     }
@@ -45,6 +44,8 @@ public class Game {
         betRound();
 
         exchangeRound();
+
+        System.out.println(board);
 
         betRound();
 

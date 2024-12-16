@@ -11,55 +11,64 @@ public class PokerClient {
     private static final int SERVER_PORT = 12345;
 
     public static void main(String[] args) {
-
-        System.out.println("Poker Client is running...");
-        System.out.println("Enter your name: ");
-        String name = new Scanner(System.in).nextLine();
-
-        try (SocketChannel socketChannel = SocketChannel.open()) {
-            socketChannel.connect(new InetSocketAddress(SERVER_ADDRESS, SERVER_PORT));
-            System.out.println("Connected to Poker Server!");
+        try (SocketChannel clientChannel = SocketChannel.open()) {
+            clientChannel.connect(new InetSocketAddress(SERVER_ADDRESS, SERVER_PORT));
+            System.out.println("Connected to the server.");
 
             Scanner scanner = new Scanner(System.in);
             ByteBuffer buffer = ByteBuffer.allocate(256);
 
-            buffer.clear();
-            buffer.put(name.getBytes());
-            buffer.flip();
-            socketChannel.write(buffer);
+            System.out.print("Enter nickname: ");
+            String message = scanner.nextLine().trim();
 
+            // Check if the user pressed Enter without typing anything
+            if (message.isEmpty()) {
+                System.out.println("Nickname cannot be empty. Please enter a valid nickname.");
+                return; // Exit or handle as needed
+            }
+
+            // Send message to the server
+            clientChannel.write(ByteBuffer.wrap(message.getBytes()));
+
+            // Read the server's response
+            buffer.clear();
+            int bytesRead = clientChannel.read(buffer);
+            buffer.flip();
+            String response = new String(buffer.array(), 0, buffer.limit()).trim();
+            System.out.println(response);
 
             while (true) {
                 System.out.print("> ");
-                String userInput = scanner.nextLine();
+                message = scanner.nextLine().trim();
 
-                if (userInput.trim().isEmpty()) {
-                    System.out.println("Please enter a valid command.");
-                    continue;
+                // Handle empty input (if the user just presses Enter)
+                if (message.isEmpty()) {
+                    System.out.println("Input cannot be empty. Please enter a valid message.");
+                    continue; // Skip this loop iteration and prompt again
                 }
 
-                // Wysyłanie danych do serwera
-                buffer.clear();
-                buffer.put(userInput.getBytes());
-                buffer.flip();
-                socketChannel.write(buffer);
+                // Send message to the server
+                clientChannel.write(ByteBuffer.wrap(message.getBytes()));
 
-                if (userInput.equalsIgnoreCase("exit")) {
-                    System.out.println("Disconnecting from server...");
+                if ("exit".equalsIgnoreCase(message)) {
+                    System.out.println("Disconnecting...");
                     break;
                 }
 
-                // Odbieranie odpowiedzi od serwera
+                // Read the server's response
                 buffer.clear();
-                int bytesRead = socketChannel.read(buffer);
-                if (bytesRead > 0) {
-                    buffer.flip();
-                    String serverResponse = new String(buffer.array(), 0, buffer.limit()).trim();
-                    System.out.println("[Server]: " + serverResponse);
+                bytesRead = clientChannel.read(buffer);
+                if (bytesRead == -1) {
+                    System.out.println("Server closed the connection.");
+                    break;
                 }
+
+                buffer.flip();
+                response = new String(buffer.array(), 0, buffer.limit()).trim();
+                System.out.println(response);
             }
         } catch (IOException e) {
-            System.err.println("Client error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
