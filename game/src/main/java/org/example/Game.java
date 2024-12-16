@@ -15,6 +15,7 @@ public class Game {
     public void addPlayer(Player player) {
         if (players.size() < 5) {
             players.add(player);
+            player.setState(State.WAITING);
         } else {
             System.out.println("Game is full!");
         }

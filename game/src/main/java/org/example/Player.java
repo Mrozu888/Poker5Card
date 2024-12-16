@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 enum State{
-    FOLD, CHECK, BET, EXCHANGE, WAITING
+    FOLD, CHECK, BET, EXCHANGE, WAITING, LOBBY, TURN
 }
 
 public class Player {
@@ -19,7 +19,7 @@ public class Player {
         this.id = id;
         this.name = name;
         this.money = money;
-        this.state = State.WAITING;
+        this.state = State.LOBBY;
         this.bet = 0;
     }
 

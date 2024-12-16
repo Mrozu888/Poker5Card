@@ -18,7 +18,6 @@ public class Handler {
 
         clientChannel.register(key.selector(), SelectionKey.OP_READ);
         System.out.println("New client connected: " + clientChannel.getRemoteAddress());
-
     }
 
     public static void handleRead(SelectionKey key) throws IOException {
