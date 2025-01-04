@@ -1,32 +1,63 @@
 package org.example;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+@Getter
+@Setter
 public class Board {
+    private static int boardIdCounter = 0;
+
+    private int boardId;
+    private int playersAmount;
+
     private int cardAmount = 5;
-    private final List<Player> players;
+    private List<Player> players = new ArrayList<>();
     private Deck deck;
     private Player firstPlayer;
     private Player currentPlayer;
     private int currentPlayerIndex;
+
     private long pot;
     private long currentBet;
 
-    public Board(List<Player> players) {
-        this.players = players;
+    private int round;
+
+    public Board(int amount) {
+        this.playersAmount = amount;
+        this.boardId = boardIdCounter++;
     }
 
     public void start() {
         this.deck = Deck.sortedDeck(); // create new sorted deck
         this.deck.shuffle(); // shuffle deck
 
+        for (Player player : players) {
+            player.setState(State.WAITING);
+        }
+
         this.currentPlayerIndex = randInt(players.size());
-        this.firstPlayer = players.get(currentPlayerIndex);
-        this.currentPlayer = firstPlayer;
+        this.firstPlayer = players.get(randInt(players.size()));
+        this.currentPlayer = players.get(currentPlayerIndex);
+        currentPlayer.setState(State.TURN);
+
         this.pot = 0;
         this.currentBet = 0;
+
+        this.round = 0;
+    }
+
+    public void addPlayer(Player player) {
+        players.add(player);
+        player.setState(State.WAITING_FOR_GAME);
+
+        if (players.size() == playersAmount) {
+            start();
+        }
     }
 
     public void dealCardsToPlayers() {
@@ -39,48 +70,35 @@ public class Board {
         return deck.dealCards(numberOfCards);
     }
 
-    public boolean placeBet(long amount) {
-        if (amount >= currentBet && currentPlayer.placeBet(amount)) {
-            pot += amount;
+    public String placeBet(Player player, long amount) {
+        if (amount >= currentBet && amount <= player.getMoney()) {
+            pot += amount - player.getBet();
+            player.setBet(amount);
             currentBet = amount;
-            System.out.println(currentPlayer.getName() + " bets " + amount);
-            return true;
+            player.setState(State.BET);
+            if(amount > currentBet) {
+                restartPlayersState();
+            }
+            return "Placed bet";
+        } else if (amount < currentBet){
+            return "Bet must be at least " + currentBet + " or higher!";
         } else {
-            System.out.println("Bet must be at least " + currentBet + " or higher!");
-            return false;
+            return "Not enough money!";
         }
     }
 
-    public boolean raise(long amount) {
-        if (amount > currentBet) {
-            currentPlayer.placeBet(amount);
-            pot += amount-currentPlayer.getBet();
-            currentBet = amount;
-            System.out.println(currentPlayer.getName() + " raises to " + amount);
-
-            restartPlayersState();
-
-            return true;
+    public String call(Player player) {
+        if (currentBet == player.getBet()) {
+            player.setState(State.CALL);
+            return "Call.";
         } else {
-            System.out.println("Raise must be greater than the current bet of " + currentBet);
-            return false;
+            return "You cannot call; there is a bet of " + currentBet;
         }
     }
 
-    public boolean check() {
-        if (currentBet == currentPlayer.getBet()) {
-            System.out.println(currentPlayer.getName() + " checks.");
-            currentPlayer.setState(State.CHECK);
-            return true;
-        } else {
-            System.out.println("You cannot check; there is a bet of " + currentBet);
-            return false;
-        }
-    }
-
-    public void fold() {
-        currentPlayer.setState(State.FOLD);
-        System.out.println(currentPlayer.getName() + " folds.");
+    public String fold(Player player) {
+        player.setState(State.FOLD);
+        return "Folds.";
     }
 
     public void nextPlayer() {
@@ -88,7 +106,8 @@ public class Board {
             do {
                 currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
                 currentPlayer = players.get(currentPlayerIndex);
-            } while (currentPlayer.getState() == State.FOLD);
+                currentPlayer.setState(State.TURN);
+            } while (currentPlayer.getState() == State.FOLD || currentPlayer.getState() == State.CALL);
         }
     }
 
@@ -102,16 +121,13 @@ public class Board {
         return true;
     }
 
-    public void endRound() {
-        evaluate();
-        System.out.println("Round ends. Pot is " + pot);
-        List<Player> winners = comparePlayersHands();
-        System.out.println("Winners: ");
-        for (Player winner : winners) {
-            System.out.println(winner.getName());
-            winner.addWinnings(pot / winners.size());
+    public boolean isRoundFinished() {
+        for (Player player : players) {
+            if (!player.getState().equals(State.FOLD) && !player.getState().equals(State.CALL)) {
+                return false;
+            }
         }
-        pot = 0; // Reset pot for next round
+        return true;
     }
 
     public void evaluate(){
@@ -187,7 +203,7 @@ public class Board {
 
     public boolean checkIfAllPlayersAreChecking(){
         for (Player player : players) {
-            if (player.getState() != State.CHECK && player.getState() != State.FOLD){
+            if (player.getState() != State.CALL && player.getState() != State.FOLD){
                 return false;
             }
         }
@@ -195,29 +211,11 @@ public class Board {
         return true;
     }
 
-    public long getPot() {
-        return pot;
-    }
 
     public int getActivePlayerCount() {
         return (int) players.stream().filter(player -> !player.getState().equals(State.FOLD)).count();
     }
 
-    public long getCurrentBet() {
-        return currentBet;
-    }
-
-    public int getCardAmount() {
-        return cardAmount;
-    }
-
-    public Player getCurrentPlayer() {
-        return currentPlayer;
-    }
-
-    public Player getFirstPlayer() {
-        return firstPlayer;
-    }
 
     @Override
     public String toString() {

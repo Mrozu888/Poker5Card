@@ -1,5 +1,9 @@
 package org.example;
 
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Objects;
 
 enum Rank {
@@ -11,6 +15,8 @@ enum Suit {
     HEARTS, DIAMONDS, CLUBS, SPADES
 }
 
+@Data
+
 public class Card {
     private final Rank rank;
     private final Suit suit;
@@ -20,62 +26,36 @@ public class Card {
         this.suit = suit;
     }
 
-    public Rank getRank() {
-        return rank;
-    }
-
-    public Suit getSuit() {
-        return suit;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Card card = (Card) o;
-        return rank == card.rank && suit == card.suit;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(rank, suit);
-    }
-
     @Override
     public String toString() {
-        return formatCard();
-    }
-
-    // Helper method to format the card with suit symbols and color
-    private String formatCard() {
         final String RESET = "\u001B[0m";
         final String RED = "\u001B[31m";
         final String BLACK = "\u001B[30m";
 
         // Map suits to symbols and colors
         String suitSymbol;
-        String color;
-        switch (suit) {
-            case HEARTS:
+        String color = switch (suit) {
+            case HEARTS -> {
                 suitSymbol = "♥";
-                color = RED;
-                break;
-            case DIAMONDS:
+                yield RED;
+            }
+            case DIAMONDS -> {
                 suitSymbol = "♦";
-                color = RED;
-                break;
-            case CLUBS:
+                yield RED;
+            }
+            case CLUBS -> {
                 suitSymbol = "♣";
-                color = BLACK;
-                break;
-            case SPADES:
+                yield BLACK;
+            }
+            case SPADES -> {
                 suitSymbol = "♠";
-                color = BLACK;
-                break;
-            default:
+                yield BLACK;
+            }
+            default -> {
                 suitSymbol = "?";
-                color = RESET;
-        }
+                yield RESET;
+            }
+        };
 
         // Map ranks to human-readable strings
         String rankString;
@@ -97,16 +77,5 @@ public class Card {
         }
 
         return color + rankString + suitSymbol + RESET;
-    }
-
-    public static void main(String[] args) {
-        // Example of printing a deck of cards
-        for (Suit suit : Suit.values()) {
-            for (Rank rank : Rank.values()) {
-                Card card = new Card(rank, suit);
-                System.out.print(card + " ");
-            }
-            System.out.println();
-        }
     }
 }

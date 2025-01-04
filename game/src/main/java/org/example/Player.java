@@ -1,21 +1,20 @@
 package org.example;
 
-import java.util.ArrayList;
+import lombok.Data;
+
 import java.util.List;
 
-enum State{
-    FOLD, CHECK, BET, EXCHANGE, WAITING, LOBBY, TURN
-}
 
+@Data
 public class Player {
     private Hand hand;
     private long money;
     private long bet;
     private String name;
     private State state;
-    private long id;
+    private int id;
 
-    public Player(long id, String name, long money) {
+    public Player(int id, String name, long money) {
         this.id = id;
         this.name = name;
         this.money = money;
@@ -36,15 +35,15 @@ public class Player {
         return hand;
     }
 
-    public boolean placeBet(long amount) {
+    public Boolean placeBet(long amount) {
         long addedBet = amount - this.bet;
         if (addedBet > money) {
-            System.out.println("You don't have enough money!");
             return false;
         }
         else{
             this.money -= addedBet;
             this.bet = amount;
+            state = State.BET;
             return true;
         }
     }
@@ -76,7 +75,7 @@ public class Player {
         return this.state;
     }
 
-    public long getId() {
+    public int getId() {
         return id;
     }
 

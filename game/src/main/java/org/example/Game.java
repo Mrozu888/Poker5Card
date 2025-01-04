@@ -1,8 +1,19 @@
 package org.example;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.*;
 
+
+@Getter
+@Setter
 public class Game {
+
+
+    public static int gameIdCounter = 0;
+
+    private int playersAmount = 2;
     private final int gameId;
     private final List<Player> players;
     private Board board;
@@ -10,27 +21,25 @@ public class Game {
     public Game(int gameId) {
         this.gameId = gameId;
         this.players = new ArrayList<>();
-        board = new Board(players);
+        board = new Board(2);
     }
     public void addPlayer(Player player) {
-        if (players.size() < 5) {
-            players.add(player);
-            player.setState(State.WAITING);
-        } else {
-            System.out.println("Game is full!");
+        players.add(player);
+        player.setState(State.WAITING_FOR_GAME);
+
+        if (players.size() == playersAmount) {
+            start();
         }
     }
 
     public void removePlayer(Player player) {
         if (players.contains(player)) {
             players.remove(player);
-        } else {
-            System.out.println("Player not found!");
         }
     }
 
     public void start() {
-//        setupPlayers();
+        setupPlayers();
 
         board.start();
 
@@ -50,87 +59,28 @@ public class Game {
 
         betRound();
 
-        board.endRound();
+//        board.endRound();
     }
-
-    private void setupPlayers() {
-        players.add(new Player(0, "Kamil", 100));
-        players.add(new Player(1, "Piotrek", 120));
-        players.add(new Player(2, "Olek", 80));
-        players.add(new Player(3, "Dominik", 1000));
+    public void setupPlayers() {
+        for (Player player : players) {
+            player.setState(State.WAITING);
+        }
+//        sendInformation(players);
     }
 
     private void betRound() {
         while (!isRoundOver()){
-            handlePlayerBet(board);
+//            handlePlayerBet(board);
         }
         board.restartPlayersState();
     }
 
-    private void handlePlayerBet(Board board) {
-        Player player = board.getCurrentPlayer();
-
-        System.out.println("\n" + player.getName() + "'s turn!");
-        System.out.println("Current pot: " + board.getPot());
-        System.out.println("Current bet to match: " + board.getCurrentBet());
-        System.out.println("Your money: " + player.getMoney());
-
-        Scanner scanner = new Scanner(System.in);
-        String action = null;
-        long amount = 0;
-
-        boolean validAction = false;
-
-        // Loop to validate player input
-        while (!validAction ) {
-            System.out.println("Choose action: (bet, raise, check, fold)");
-            action = scanner.nextLine().toLowerCase();
-
-            if (action.equals("bet") || action.equals("raise")) {
-                System.out.print("Enter amount: ");
-                if (scanner.hasNextLong()) {
-                    amount = scanner.nextLong();
-                    scanner.nextLine(); // Consume newline
-                    if (amount <= 0 || amount > player.getMoney()) {
-                        System.out.println("Invalid amount! Enter a positive number within your available money.");
-                        continue;
-                    }
-                } else {
-                    System.out.println("Invalid amount! Please enter a valid number.");
-                    scanner.nextLine(); // Consume invalid input
-                    continue;
-                }
-            }
-
-            // Validate the action
-            switch (action) {
-                case "bet":
-                    if (board.placeBet(amount)) {
-                        validAction = true;
-                    }
-                    break;
-                case "raise":
-                    if (board.raise(amount)) {
-                        validAction = true;
-                    }
-                    break;
-                case "check":
-                    if (board.check()) {
-                        validAction = true;
-                    }
-                    break;
-                case "fold":
-                    board.fold();
-                    validAction = true;
-                    break;
-                default:
-                    System.out.println("Invalid action! Choose bet, raise, check, fold, or exchange.");
-            }
-        }
-
-        // Call a method to proceed to the next player's turn
-        board.nextPlayer();
-    }
+//    private static void sendInformation(List<Player> players) {
+//        String message = "Game is starting! \n ";
+//        for (Player player : players) {
+//            Handlers.send(BoardExtension.getSocketChannelByPlayerId(player.getId()),message);
+//        }
+//    }
 
     private void handlePlayerExchange(Board board) {
         Player player = board.getCurrentPlayer();
@@ -186,13 +136,7 @@ public class Game {
         return false;
     }
 
-    public int getGameId() {
-        return gameId;
-    }
 
-    public List<Player> getPlayers() {
-        return players;
-    }
 
     @Override
     public String toString() {

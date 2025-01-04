@@ -1,8 +1,13 @@
 package org.example;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Getter
+@Setter
 public class Hand {
     private final List<Card> cards;
     private int rankValue;
@@ -14,10 +19,6 @@ public class Hand {
             throw new IllegalArgumentException("A hand must contain exactly 5 cards.");
         }
         this.cards = cards;
-    }
-
-    public List<Card> getCards() {
-        return cards;
     }
 
     public void exchangeCards(int[] indexes, List<Card> newCards) {
@@ -193,10 +194,6 @@ public class Hand {
 
     public int[] getEvaluatedValues(){
         return new int[]{this.handValue, this.rankValue};
-    }
-
-    public String getHandType() {
-        return handType;
     }
 
     @Override

@@ -8,15 +8,14 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 
-import static org.example.Handler.handleAccept;
-import static org.example.Handler.handleRead;
+import static org.example.Handlers.handleAccept;
+import static org.example.Handlers.handleRead;
 
 public class PokerServer {
     private static final int PORT = 12345;
 
-
     public static final Map<SocketChannel, Player> players = new HashMap<>();
-    public static final List<Game> games = new ArrayList<>(); // Map of game IDs to game instances
+    public static final List<Board> boards = new ArrayList<>(); // Map of game IDs to game instances
 
     public static void main(String[] args) {
         try (Selector selector = Selector.open();
@@ -48,6 +47,4 @@ public class PokerServer {
             e.printStackTrace();
         }
     }
-
-
 }
